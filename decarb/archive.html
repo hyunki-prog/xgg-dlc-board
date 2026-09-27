@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><title>해운 탈탄소 상황판</title>
+<style>
+ body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0f172a;font-family:system-ui,-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;color:#e2e8f0}
+ .box{background:#1e293b;padding:32px 36px;border-radius:14px;box-shadow:0 10px 40px rgba(0,0,0,.4);width:min(92vw,380px)}
+ h1{font-size:18px;margin:0 0 4px}.sub{font-size:12px;color:#94a3b8;margin:0 0 18px}
+ input{width:100%;box-sizing:border-box;font-size:16px;padding:10px 12px;border-radius:8px;border:1px solid #475569;background:#0f172a;color:#fff}
+ button{margin-top:12px;width:100%;padding:10px;font-size:15px;border:0;border-radius:8px;background:#2563eb;color:#fff;cursor:pointer}
+ button:disabled{opacity:.5}.err{color:#f87171;font-size:13px;min-height:18px;margin-top:8px}
+ .foot{font-size:11px;color:#64748b;margin-top:14px}
+</style></head><body>
+<form class="box" id="f"><h1>해운 탈탄소 상황판</h1><p class="sub">Updated 2026-09-28 05:43 (Tianjin) · Enter the shared password 请输入密码</p>
+<input id="pw" type="password" autocomplete="current-password" placeholder="Password" autofocus>
+<button id="go" type="submit">Open</button><div class="err" id="err"></div>
+<div class="foot">Encrypted page — nothing is readable without the password. Ask HYUNKI if you don't have it.</div></form>
+<script>
+// ★ 전역을 남기지 않는다 — 풀린 페이지가 같은 전역에서 돌기 때문에 여기 const D 가 남아 있으면
+//   상황판 자신의 `const D=` 가 「이미 선언됨」으로 죽고 빈 화면이 된다(2026-09-23 장기체류판).
+{
+const D={"salt": "AcRsiuJOdzTt2gH8EsFKMw==", "iv": "ccJrePiLKNrG6k7u", "ct": "R2hcFiEajEaYmEmFcNezLLykRRIZfD5xgE1KfcBkL9rnX5e5NkalQYdJLJXJCf4T5ELafjG/IX9VtWIC39R5WO5xTlKIcvgiBqWeT6dcwgKskqT9/L0Xzs3UjWg5Rnv+7WHkXF8UWZKLaT9+2Qt0n8xLnkKxnRn7tSsOCN5Ym6DYI1oDemLBFeDQ5974POwGCpzn4UwHBArMUaYy5nhjAP12XyYadSFNMPXc4P7Zqi8qUtcX6wyDBJ6gW7ScA0jcetLgEEWnjgFy3SfVmxbHlsNRcrayO1RZOa3MwMCgqAfFuadLlDyhU4Uu8r7D9kJN1BTXuOyboTXwABrv6vZZicHFhKRNSePi4jwyHo+wGTBzxiLrALV5Jjbp9uPUYvTL7v5GJLk34iOIks102Y8zoZe4e8Y/MY5GmN4zjQSAAbeKmiZTCzjL6taXJlMvhcxsfDY8ne7OR7HKhc7gt9TMa0iacIlmO9RXnCkUAXrTlmuuScDhAO7NAl80F/uG/ja/2+uP315ZRCApFXRG9kgdffIVWygFjdwYSZPYE2bO727sGUlWGdkD/K8P3lRzXJEr6SC3dW7GJvETZ8AO81ETgDzsySALb6DXaHUSzMHcGbDa8x1ijhj1kWg/joyx43btvxseABLGpgZyAC2Y3NZKVAdPpPqYehz5lD8Zmipqhri7yks4O1eZ5Z7GsIPs+AWzPU9zu5uuMTLitMwrhnege7EZpDM45tkzAtRt226+XGTZD52b6frboh9j6JIN1DXSPv1mdo+rANGUFFIk+uyCu4oWWt3+Hk3FrsC4kGo23rM=", "iter": 300000};
+const b64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+const KEYSTORE='board_key_'+D.salt.slice(0,8);
+async function keyFromPw(pw){
+  const km=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveBits']);
+  const bits=await crypto.subtle.deriveBits({name:'PBKDF2',salt:b64(D.salt),iterations:D.iter,hash:'SHA-256'},km,256);
+  return new Uint8Array(bits);
+}
+// ★ document.open() 은 파서가 아직 도는 중(449KB 페이지 스트리밍 중)에 부르면 무시되고 write 가 본문에 '끼어든다'.
+//   반드시 load 이후에만 갈아 끼운다. (2026-09-15 github.io 에서 겪음 — localhost 는 페이지가 작아 안 걸렸다)
+const loaded=new Promise(r=>document.readyState==='complete'?r():window.addEventListener('load',r,{once:true}));
+async function unlock(raw){
+  const key=await crypto.subtle.importKey('raw',raw,'AES-GCM',false,['decrypt']);
+  const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:b64(D.iv)},key,b64(D.ct));
+  const html=new TextDecoder().decode(pt);
+  await loaded;
+  document.open();document.write(html);document.close();
+}
+(async()=>{try{const s=localStorage.getItem(KEYSTORE);if(s){await unlock(b64(s));}}catch(e){try{localStorage.removeItem(KEYSTORE)}catch(_){}}})();
+document.getElementById('f').addEventListener('submit',async ev=>{
+  ev.preventDefault();const btn=document.getElementById('go'),err=document.getElementById('err');btn.disabled=true;err.textContent='';
+  try{const raw=await keyFromPw(document.getElementById('pw').value);
+      try{localStorage.setItem(KEYSTORE,btoa(String.fromCharCode(...raw)))}catch(_){}
+      await unlock(raw);}
+  catch(e){err.textContent='Wrong password 密码错误';btn.disabled=false;try{localStorage.removeItem(KEYSTORE)}catch(_){}}
+});
+}
+</script></body></html>
